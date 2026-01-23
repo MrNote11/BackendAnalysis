@@ -1,0 +1,33 @@
+services:
+  web:
+  
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env.compose
+    ports:
+      - "8000:8000"
+    command: >
+      gunicorn config.wsgi:application
+      --bind 127.0.0.1:8000
+      --workers 3
+      --timeout 120
+    volumes:
+      - ./src:/code
+    # depends_on:
+      # - db
+
+#   db:
+#     image: timescale/timescaledb:latest-pg17
+#     environment:
+#       POSTGRES_USER: time-user
+#       POSTGRES_PASSWORD: time-pw
+#       POSTGRES_DB: timescaledb
+#     ports:
+#       - "5432:5432"
+#     volumes:
+#       - timescaledb_data:/var/lib/postgresql/data
+
+# volumes:
+#   timescaledb_data:

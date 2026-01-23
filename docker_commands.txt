@@ -1,0 +1,24 @@
+##steps to setup docker container
+
+docker ps -> containers available
+
+docker pull _____ -> go to the docker hub, find the python package version you require and then input it into the command
+
+docker run _____ -> paste the package version and run the command
+
+docker build -t (this is ur project path directory) -> youtube-video-analytics-django -f Dockerfile . -> to build your Docker project image
+
+docker run youtube-video-analytics-django -> to run ur image container but u will 
+ 
+docker compose up -> starting up our docker compose config file
+
+docker compose down -> shutting down the containers
+
+docker compuse up --watch -> rebuilt and create logs console
+
+docker compose down -v -> deleting the volumes 
+
+docker compose up --build -> rebuilt only 
+
+##not needed
+docker run -it ____ -> paste the python package version and you will see a console terminal 
