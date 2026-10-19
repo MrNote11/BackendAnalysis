@@ -37,7 +37,7 @@ An automated financial market analytics and stock intelligence platform built wi
 ```text
 BackendAnalysis/
 ├── compose.yaml                # Docker Compose config (TimescaleDB & Redis)
-├── manage.py                   # Django root management script
+├── manage.py                   # Loads .env, picks dev/prod settings (env=prod), runs Django commands
 ├── requirements.txt            # Python dependencies
 ├── .env.sample                 # Environment configuration template
 ├── nbs/                        # Jupyter Notebooks for analysis & prototyping
@@ -61,13 +61,17 @@ BackendAnalysis/
 │   ├── Decide - 1 - Logic-based Recommendation.ipynb
 │   ├── Decide - 2 - LLM-based Recommendation.ipynb
 │   └── Putting it all together.ipynb
-└── src/                        # Django Application Source
-    ├── cfehome/                # Core Django project configuration & settings
-    │   ├── celery.py           # Celery application configuration
-    │   ├── settings.py         # App settings (TimescaleDB, Redis, Celery)
-    │   └── urls.py             # URL routing
-    ├── helpers/                # External API client wrappers (Polygon, Alpha Vantage)
-    └── market/                 # Stock quotes model, migrations, and analysis services
+├── config/                     # Django project configuration
+│   ├── env.py                  # Loads .env and chooses config.settings.dev or .prod
+│   ├── settings/
+│   │   ├── base.py             # Shared settings (apps, TimescaleDB, DRF/JWT, Celery)
+│   │   ├── dev.py              # Local development (DEBUG on, local CORS, console + file logs)
+│   │   └── prod.py             # Production (HTTPS, secure cookies, WhiteNoise, env-driven hosts)
+│   ├── celery.py               # Celery application configuration
+│   └── urls.py                 # URL routing (admin, JWT tokens, API docs)
+├── helpers/                    # External API client wrappers (Polygon, Alpha Vantage)
+├── market/                     # Stock quotes model, migrations, and analysis services
+└── logs/                       # Log files (created automatically, not committed)
 ```
 
 ---
@@ -153,19 +157,21 @@ python manage.py createsuperuser
 ```bash
 python manage.py runserver
 ```
-Visit `http://127.0.0.1:8000/admin` to access the admin dashboard.
+Visit `http://127.0.0.1:8000/admin` to access the admin dashboard, and `http://127.0.0.1:8000/api/docs/` for the Swagger API docs.
+
+Settings default to `config.settings.dev`. Set `env=prod` in `.env` (or the environment) to use `config.settings.prod`, which also needs `ALLOWED_HOSTS`, `DATABASE_URL` and `DEBUG=False`.
 
 ### Run Celery Worker (Asynchronous Tasks)
 In a separate terminal (with virtual environment active):
 ```bash
-celery -A cfehome worker -l info
+celery -A config worker -l info
 ```
-*(On Windows: `celery -A cfehome worker -l info --pool=solo`)*
+*(On Windows: `celery -A config worker -l info --pool=solo`)*
 
 ### Run Celery Beat (Periodic Scheduling)
 To enable periodic market sync tasks:
 ```bash
-celery -A cfehome beat -l info
+celery -A config beat -l info
 ```
 
 ### Launch Jupyter Notebooks

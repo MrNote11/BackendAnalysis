@@ -5,9 +5,13 @@ from dataclasses import dataclass
 from typing import Literal
 from urllib.parse import urlencode
 from datetime import datetime
-from decouple import config
+import os
 
-POLOGYON_API_KEY = config("POLOGYON_API_KEY", default=None, cast=str)
+from dotenv import load_dotenv
+
+load_dotenv()  # finds .env in this folder or a parent (the repo root)
+
+POLYGON_API_KEY = os.getenv("POLYGON_API_KEY")
 
 
 def transform_polygon_result(result):
@@ -38,7 +42,7 @@ class PolygonAPIClient:
     sort: Literal["asc", "desc"] = "asc"
 
     def get_api_key(self):
-        return self.api_key or POLOGYON_API_KEY
+        return self.api_key or POLYGON_API_KEY
 
     def get_headers(self):
         api_key = self.get_api_key()

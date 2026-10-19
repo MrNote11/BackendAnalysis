@@ -4,7 +4,8 @@ dj-database-url
 jupyter
 requests
 psycopg[binary]
-python-decouple
+python-dotenv
+python-decouple  # still used directly by notebooks 1-7
 pytz
 Celery
 Redis
@@ -13,3 +14,8 @@ django-celery-results
 django-admin-interface
 django-admin-rangefilter
 openai
+djangorestframework
+djangorestframework-simplejwt
+django-cors-headers
+drf-spectacular
+whitenoise

@@ -1,14 +1,18 @@
 import pytz
 import requests
 
-from decouple import config
+import os
 from dataclasses import dataclass
 from typing import Literal
 from urllib.parse import urlencode
 from datetime import datetime
 from decimal import Decimal
 
-ALPHA_VANTAGE_API_KEY = config("ALPHA_VANTAGE_API_KEY", default=None, cast=str)
+from dotenv import load_dotenv
+
+load_dotenv()  # finds .env in this folder or a parent (the repo root)
+
+ALPHA_VANTAGE_API_KEY = os.getenv("ALPHA_VANTAGE_API_KEY")
 
 def transform_alpha_vantage_result(timestamp_str, result):
     # unix_timestamp = result.get('t') / 1000.0

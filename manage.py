@@ -1,15 +1,15 @@
 #!/usr/bin/env python
 """Django's command-line utility for administrative tasks."""
-import os
 import sys
-from pathlib import Path
+
+from config.env import setup_settings_module
 
 
 def main():
     """Run administrative tasks."""
-    base_dir = Path(__file__).resolve().parent
-    sys.path.insert(0, str(base_dir / "src"))
-    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "cfehome.settings")
+    # Load .env, then pick config.settings.prod when env=prod, otherwise config.settings.dev
+    setup_settings_module()
+
     try:
         from django.core.management import execute_from_command_line
     except ImportError as exc:
