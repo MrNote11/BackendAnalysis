@@ -210,6 +210,8 @@ SIMPLE_JWT = {
 }
 
 
+POLYGON_API_KEY = os.getenv("POLYGON_API_KEY", "")
+ALPHA_VANTAGE_API_KEY = os.getenv("ALPHA_VANTAGE_API_KEY", "")
 # Celery Configuration Options
 
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")

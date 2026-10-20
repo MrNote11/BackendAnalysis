@@ -1,10 +1,10 @@
 import pytz
 import requests
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Literal
 from urllib.parse import urlencode
-from datetime import datetime
+from datetime import date, datetime, timedelta
 import os
 
 from dotenv import load_dotenv
@@ -12,6 +12,17 @@ from dotenv import load_dotenv
 load_dotenv()  # finds .env in this folder or a parent (the repo root)
 
 POLYGON_API_KEY = os.getenv("POLYGON_API_KEY")
+
+# Give up instead of waiting forever when Polygon stalls (it can hold the connection while throttling)
+REQUEST_TIMEOUT_SECONDS = 30
+
+
+def latest_weekday():
+    """The most recent weekday before today, as YYYY-MM-DD. The free Polygon plan only covers about the last 2 years."""
+    day = date.today() - timedelta(days=1)
+    while day.weekday() >= 5:  # Saturday or Sunday
+        day -= timedelta(days=1)
+    return day.isoformat()
 
 
 def transform_polygon_result(result):
@@ -35,8 +46,8 @@ class PolygonAPIClient:
     ticker: str = "AAPL"
     multiplier: int = 5
     timespan:str = "minute"
-    from_date:str = "2024-01-09"
-    to_date:str = "2024-01-09"
+    from_date:str = field(default_factory=latest_weekday)
+    to_date:str = field(default_factory=latest_weekday)
     api_key:str = ""
     adjusted: bool = True 
     sort: Literal["asc", "desc"] = "asc"
@@ -72,7 +83,7 @@ class PolygonAPIClient:
     def fetch_data(self):
         headers = self.get_headers()
         url = self.generate_url()
-        response = requests.get(url, headers=headers)
+        response = requests.get(url, headers=headers, timeout=REQUEST_TIMEOUT_SECONDS)
         response.raise_for_status() # not 200/201
         return response.json()
 

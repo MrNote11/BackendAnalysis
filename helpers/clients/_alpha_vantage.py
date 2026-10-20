@@ -14,13 +14,18 @@ load_dotenv()  # finds .env in this folder or a parent (the repo root)
 
 ALPHA_VANTAGE_API_KEY = os.getenv("ALPHA_VANTAGE_API_KEY")
 
+# Give up instead of waiting forever if Alpha Vantage stops responding
+REQUEST_TIMEOUT_SECONDS = 30
+
 def transform_alpha_vantage_result(timestamp_str, result):
-    # unix_timestamp = result.get('t') / 1000.0
-    # utc_timestamp = datetime.fromtimestamp(unix_timestamp, tz=pytz.timezone('UTC'))
-    timestamp_format = '%Y-%m-%d %H:%M:%S' 
     eastern = pytz.timezone("US/Eastern")
     utc = pytz.utc
-    timestamp = eastern.localize(datetime.strptime(timestamp_str,timestamp_format)).astimezone(utc)
+    if len(timestamp_str) == 10:
+        # Daily data has only a date; stamp it at the 4pm US/Eastern market close
+        local_time = datetime.strptime(timestamp_str, '%Y-%m-%d').replace(hour=16)
+    else:
+        local_time = datetime.strptime(timestamp_str, '%Y-%m-%d %H:%M:%S')
+    timestamp = eastern.localize(local_time).astimezone(utc)
     return {
         'open_price': Decimal(result['1. open']),
         'close_price': Decimal(result['4. close']),
@@ -39,7 +44,8 @@ def transform_alpha_vantage_result(timestamp_str, result):
 @dataclass
 class AlphaVantageAPIClient:
     ticker: str = "AAPL"
-    function: Literal["TIME_SERIES_INTRADAY"] = "TIME_SERIES_INTRADAY"
+    # TIME_SERIES_DAILY is free; TIME_SERIES_INTRADAY needs a premium key
+    function: Literal["TIME_SERIES_DAILY", "TIME_SERIES_INTRADAY"] = "TIME_SERIES_DAILY"
     interval: Literal["1min", "5min", "15min", "30min", "60min"] = "1min"
     month: str = "2024-01"
     api_key: str = ""
@@ -52,14 +58,15 @@ class AlphaVantageAPIClient:
         return {}
 
     def get_params(self):
-        return {
+        params = {
             "apikey": self.get_api_key(),
             "symbol": self.ticker,
-            "interval": self.interval,
             "function": self.function,
-            "month": self.month,
-            
         }
+        if self.function == "TIME_SERIES_INTRADAY":
+            params["interval"] = self.interval
+            params["month"] = self.month
+        return params
     
     def generate_url(self, pass_auth=False):
         path = "/query"
@@ -75,14 +82,18 @@ class AlphaVantageAPIClient:
     def fetch_data(self):
         headers = self.get_headers()
         url = self.generate_url()
-        response = requests.get(url, headers=headers)
+        response = requests.get(url, headers=headers, timeout=REQUEST_TIMEOUT_SECONDS)
         response.raise_for_status() # not 200/201
         return response.json()
 
     def get_stock_data(self):
         data = self.fetch_data()
-        dataset_key = [x for x in list(data.keys()) if not x.lower() == "meta data"][0]
-        results = data[dataset_key]
+        dataset_keys = [x for x in data.keys() if x.startswith("Time Series")]
+        if not dataset_keys:
+            # Alpha Vantage answers with HTTP 200 and an 'Information', 'Note' or 'Error Message' text instead of data
+            message = data.get("Information") or data.get("Note") or data.get("Error Message") or data
+            raise ValueError(f"Alpha Vantage returned no data: {message}")
+        results = data[dataset_keys[0]]
         dataset = []
         for timestamp_str in results.keys():
             dataset.append(

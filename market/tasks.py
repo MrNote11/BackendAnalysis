@@ -7,6 +7,9 @@ from django.utils import timezone
 import helpers.clients as helper_clients
 
 from .utils import batch_insert_stock_data
+
+# The free Polygon plan only returns about the last 2 years; older requests get 403 NOT_AUTHORIZED.
+POLYGON_MAX_HISTORY_YEARS = 2
     
 
 @shared_task
@@ -47,7 +50,8 @@ def sync_stock_data(days_ago=2):
 
 
 @shared_task
-def sync_historical_stock_data(years_ago=5, company_ids=[], use_celery=True, verbose=False):
+def sync_historical_stock_data(years_ago=POLYGON_MAX_HISTORY_YEARS, company_ids=[], use_celery=True, verbose=False):
+    years_ago = min(years_ago, POLYGON_MAX_HISTORY_YEARS)
     Company = apps.get_model("market", "Company")
     qs = Company.objects.filter(active=True)
     if len(company_ids) > 0:
